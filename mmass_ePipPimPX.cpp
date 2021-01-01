@@ -21,7 +21,7 @@ int main(int argc, char **argv){
     auto ele = ROOT::Math::PxPyPzMVector();
     auto pro = ROOT::Math::PxPyPzMVector();
 
-    TH1F *h1 = new TH1F("e#pi^{+}#pi^{-}p", "missing mass", 200, 0.0, 0.4);
+    TH1F *h1 = new TH1F("e#pi^{+}#pi^{-}p", "missing mass", 200, 0.0, 0.35);
 
     for(int i = 1; i < argc; i++){
         TFile f1(argv[i]);
