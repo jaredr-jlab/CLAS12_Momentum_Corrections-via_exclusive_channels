@@ -24,26 +24,26 @@ int main(int argc, char **argv){
 
     TChain chain("h22");
     for(int i = 1; i < argc; i++){
-        chain.Add(argv[i])
+        chain.Add(argv[i]);
     }
 
-    chain->SetBranchAddress("ex", &ex);
-    chain->SetBranchAddress("ey", &ey);
-    chain->SetBranchAddress("ez", &ez);
-    chain->SetBranchAddress("pipx", &pipx);
-    chain->SetBranchAddress("pipy", &pipy);
-    chain->SetBranchAddress("pipz", &pipz);
-    chain->SetBranchAddress("pimx", &pimx);
-    chain->SetBranchAddress("pimy", &pimy);
-    chain->SetBranchAddress("pimz", &pimz);
-    chain->SetBranchAddress("prox", &prox);
-    chain->SetBranchAddress("proy", &proy);
-    chain->SetBranchAddress("proz", &proz);
+    chain.SetBranchAddress("ex", &ex);
+    chain.SetBranchAddress("ey", &ey);
+    chain.SetBranchAddress("ez", &ez);
+    chain.SetBranchAddress("pipx", &pipx);
+    chain.SetBranchAddress("pipy", &pipy);
+    chain.SetBranchAddress("pipz", &pipz);
+    chain.SetBranchAddress("pimx", &pimx);
+    chain.SetBranchAddress("pimy", &pimy);
+    chain.SetBranchAddress("pimz", &pimz);
+    chain.SetBranchAddress("prox", &prox);
+    chain.SetBranchAddress("proy", &proy);
+    chain.SetBranchAddress("proz", &proz);
 
-    int nentries = chain->GetEntries();
+    int nentries = chain.GetEntries();
 
     for(int j = 0; j < nentries; j++){
-        chain->GetEntry(j);
+        chain.GetEntry(j);
 
         pip.SetPx(pipx);
         pip.SetPy(pipy);
