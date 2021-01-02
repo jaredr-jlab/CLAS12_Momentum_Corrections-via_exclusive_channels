@@ -30,18 +30,18 @@ set encoding=utf-8
 set laststatus=2
 
 " Building the statusline
-function! GitBranch()
-  return system("git rev-parse --abbrev-ref HEAD 2>/dev/null | tr -d '\n'")
-endfunction
+"function! GitBranch()
+"  return system("git rev-parse --abbrev-ref HEAD 2>/dev/null | tr -d '\n'")
+"endfunction
 
-function! StatuslineGit()
-  let l:branchname = GitBranch()
-  return strlen(l:branchname) > 0?'  '.l:branchname.' ':''
-endfunction
+"function! StatuslineGit()
+"  let l:branchname = GitBranch()
+"  return strlen(l:branchname) > 0?'  '.l:branchname.' ':''
+"endfunction
 
 set statusline=
-set statusline+=%#DiffAdd#
-set statusline+=%{StatuslineGit()}       " Git branch status
+"set statusline+=%#DiffAdd#
+"set statusline+=%{StatuslineGit()}       " Git branch status
 set statusline+=%#Todo#
 set statusline+=\ %<%F                   " Truncation point for status bar and File path
 set statusline+=\ %#StatusLineTerm#
