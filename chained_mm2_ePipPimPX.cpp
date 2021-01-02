@@ -68,9 +68,7 @@ int main(int argc, char **argv){
 
         auto ePipPimPX = beam + target - pip - pim - ele -pro;
         
-        double mass_ePipPimPX = ePipPimPX.M();
-
-        double mm2_ePipPimPX = mass_ePipPimPX * mass_ePipPimPX;
+        double mm2_ePipPimPX = ePipPimPX.M2();
 
         h1->Fill(mm2_ePipPimPX);
     }
