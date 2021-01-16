@@ -87,16 +87,22 @@ int main(int argc, char **argv){
             switch(e_sector){
                 case 1:
                     h1->Fill(p_ele, mm_ePipPimX);
+                    break;
                 case 2:
                     h2->Fill(p_ele, mm_ePipPimX);
+                    break;
                 case 3:
                     h3->Fill(p_ele, mm_ePipPimX);
+                    break;
                 case 4:
                     h4->Fill(p_ele, mm_ePipPimX);
+                    break;
                 case 5:
                     h5->Fill(p_ele, mm_ePipPimX);
+                    break;
                 case 6:
                     h6->Fill(p_ele, mm_ePipPimX);
+                    break;
             }
         }
     }
