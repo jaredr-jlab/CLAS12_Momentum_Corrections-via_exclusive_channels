@@ -32,7 +32,7 @@ void SliceFit(TH2F *histo, const int num_Slices,
     TF1 f1("f1", "gaus(0)+pol1(3)", fit_min, fit_max);
     f1.SetParNames("Constant", "Mean", "Sigma", "p0", "p1");
     f1.SetParLimits(2, 0, 1);
-    for (int j=0; j<4; j++){  // using 4 iterations to adjust range.
+    for (int j=0; j<5; j++){  // using 4 iterations to adjust range.
         for (int i=cut_Slices_left; i<(num_Slices-cut_Slices_right); i++){
             f1.SetParameters(hfy[i]->GetMaximum(), hfy[i]->GetMean(), hfy[i]->GetRMS(), 1, 1);
             hfy[i]->Fit(&f1, "", "", f_min[i], f_max[i]);
