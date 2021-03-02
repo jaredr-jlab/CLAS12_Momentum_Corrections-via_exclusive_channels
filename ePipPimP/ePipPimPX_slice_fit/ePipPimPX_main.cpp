@@ -1,3 +1,6 @@
+#include <TString.h>
+#include <TCanvas.h>
+#include <TLegend.h>
 #include <TChain.h>
 #include <Math/Vector4D.h>
 #include <TFile.h>
@@ -41,23 +44,23 @@ int main(int argc, char **argv){
     auto ePimPX = ROOT::Math::PxPyPzEVector();
     auto ePipPimPX = ROOT::Math::PxPyPzEVector();
 
-    //------------------Instantiate 2D Histograms-------------------------------
+    //------------------Initialize 2D Histograms-------------------------------
     //Missing Energy vs Electron Momentum
     TH2F *H_me_pele = new TH2F("me",
-                               "Missing Energy;electron momentum [GeV];missing energy [GeV]",
-                               200, xlow, xup, 200, ylow_me, yup_me);
+                   "Missing Energy;electron momentum [GeV];missing energy [GeV]",
+                   200, xlow, xup, 200, ylow_me, yup_me);
     //Pip mass vs Electron Momentum
     TH2F *H_pip_pele = new TH2F("mm2_pip",
-                                "Expecting #pi^{+};electron momentum [GeV];missing mass^{2} [GeV]",
-                                200, xlow, xup, 200, ylow_pip, yup_pip);
+                    "Expecting #pi^{+};electron momentum [GeV];missing mass^{2} [GeV]",
+                    200, xlow, xup, 200, ylow_pip, yup_pip);
     //Pim mass vs Electron Momentum
     TH2F *H_pim_pele = new TH2F("mm2_pim",
-                                "Expecting #pi^{-};electron momentum [GeV];missing mass^{2} [GeV]",
-                                200, xlow, xup, 200, ylow_pim, yup_pim);
+                    "Expecting #pi^{-};electron momentum [GeV];missing mass^{2} [GeV]",
+                    200, xlow, xup, 200, ylow_pim, yup_pim);
     //Proton mass vs Electron Momentum
     TH2F *H_pro_pele = new TH2F("mm_proton",
-                                "Expecting proton;electron momentum [GeV];missing mass [GeV]",
-                                200, xlow, xup, 200, ylow_pro, yup_pro);
+                    "Expecting proton;electron momentum [GeV];missing mass [GeV]",
+                    200, xlow, xup, 200, ylow_pro, yup_pro);
 
     //------------------Chain Input Root Files----------------------------------
     TChain chain("h22");
@@ -119,28 +122,243 @@ int main(int argc, char **argv){
     }
     
     //------------------Draw 2D Histograms--------------------------------------
-    TCanvas *c = new TCanvas("c", "c", 2200, 1600);
-    c->Divide(2, 2);
-    c->cd(1);
+    TCanvas c("c", "c", 2200, 1600);
+    c.Divide(2, 2);
+    c.cd(1);
     H_me_pele->Draw("COLZ");
-    c->cd(2);
+    c.cd(2);
     H_pip_pele->Draw("COLZ");
-    c->cd(3);
+    c.cd(3);
     H_pim_pele->Draw("COLZ");
-    c->cd(4);
+    c.cd(4);
     H_pro_pele->Draw("COLZ");
-    c->Print("quantites_pele.pdf");
+    c.Print("quantites_pele.pdf");
 
-    SliceFit(H_me_pele, 10, ylow_me, yup_me);
-    SliceFit(H_pip_pele, 10, ylow_pip, yup_pip);
-    SliceFit(H_pim_pele, 10, ylow_pim, yup_pim);
-    SliceFit(H_pro_pele, 10, ylow_pro, yup_pro);
+    
+    //------------------H_me_pele Slice and Fit---------------------------------
+    // Instantiate array of 1D histograms for the missing energy slices
+    int nSlices = 10;
+    int first_slice = 2;
+    int last_slice = 9;
+    TH1D *hfit1 = new TH1D[nSlices];
 
-    delete H_me_pele;
-    delete H_pip_pele;
-    delete H_pim_pele;
-    delete H_pro_pele;
-    delete c;
+    // Slice the 2D Histogram
+    SliceHisto2D(H_me_pele, hfit1, nSlices);
+
+    // Instantiate a TGraphErrors for mean values
+    TGraphErrors *gr_mean1 = new TGraphErrors(nSlices);
+
+    // Fit the Histogram Slices and get Mean values
+    FitSlices(hfit1, gr_mean1, nSlices, ylow_me, yup_me);
+    
+    // Remove the mean values of unwanted slices
+    int lastPoint = 0;
+    for (int i=last_slice; i<nSlices; i++){
+        lastPoint = gr_mean1->GetN() - 1;
+        gr_mean1->RemovePoint(lastPoint);
+    }
+    for (int i=0; i<first_slice; i++){
+        gr_mean1->RemovePoint(0);
+    }
+
+    // Draw the Fitted Slices
+    TCanvas cf1("cf1", "cf1", 1200, 900);
+    cf1.Divide(3, 3);
+    gStyle->SetOptFit(111);
+    int pad = 1;
+    for (int i=first_slice; i<last_slice; i++, pad++){
+        cf1.cd(pad);
+        (hfit1 + i)->Draw();
+    }
+    TString me_name = H_me_pele->GetName();
+    cf1.Print("sliceFit_" + me_name + ".pdf");
+
+    // Draw Mean values
+    TCanvas cm1("cm1", "cm1", 1200, 900);
+    gr_mean1->SetMarkerColor(2);
+    gr_mean1->SetMarkerStyle(21);
+    gr_mean1->SetMarkerSize(1.5);
+    gr_mean1->GetXaxis()->SetTitle("electron momentum [GeV]");
+    gr_mean1->GetYaxis()->SetTitle("missing energy [GeV]");
+    gr_mean1->SetTitle("Missing Engergy");
+    gr_mean1->Draw("AP");
+    TLegend leg1(0.1, 0.8, 0.3, 0.9);
+    leg1.AddEntry(gr_mean1, "Before Corrections", "p");
+    leg1.Draw();
+    cm1.Print("mean_" + me_name + ".pdf");
+
+    delete[] hfit1;  // cleanup
+    delete gr_mean1;  // cleanup
+
+    //------------------H_pip_pele Slice and Fit--------------------------------
+    // Initialize array of 1D histograms for the missing energy slices
+    nSlices = 10;
+    first_slice = 2;
+    last_slice = 9;
+    TH1D *hfit2 = new TH1D[nSlices];
+
+    // Slice the 2D Histogram
+    SliceHisto2D(H_pip_pele, hfit2, nSlices);
+
+    // Instantiate a TGraphErrors for mean values
+    TGraphErrors *gr_mean2 = new TGraphErrors(nSlices);
+
+    // Fit the Histogram Slices and get mean values
+    FitSlices(hfit2, gr_mean2, nSlices, ylow_pip, yup_pip);
+
+    // Remove the mean values of unwanted slices
+    lastPoint = 0;
+    for (int i=last_slice; i<nSlices; i++){
+        lastPoint = gr_mean2->GetN() - 1;
+        gr_mean2->RemovePoint(lastPoint);
+    }
+    for (int i=0; i<first_slice; i++){
+        gr_mean2->RemovePoint(0);
+    }
+
+    // Draw the Fitted Slices
+    TCanvas cf2("cf2", "cf2", 1200, 900);  // draw SliceFit()
+    cf2.Divide(3, 3);
+    gStyle->SetOptFit(111);
+    pad = 1;
+    for (int i=first_slice; i<last_slice; i++, pad++){
+        cf2.cd(pad);
+        (hfit2 + i)->Draw();
+    }
+    TString pip_name = H_pip_pele->GetName();
+    cf2.Print("sliceFit_" + pip_name + ".pdf");
+
+    // Draw Mean values
+    TCanvas cm2("cm2", "cm2", 1200, 900);
+    gr_mean2->SetMarkerColor(2);
+    gr_mean2->SetMarkerStyle(21);
+    gr_mean2->SetMarkerSize(1.5);
+    gr_mean2->GetXaxis()->SetTitle("electron momentum [GeV]");
+    gr_mean2->GetYaxis()->SetTitle("missing mass^{2} [GeV]");
+    gr_mean2->SetTitle("Expecting Pip");
+    gr_mean2->Draw("AP");
+    TLegend leg2(0.1, 0.8, 0.3, 0.9);
+    leg2.AddEntry(gr_mean2, "Before Corrections", "p");
+    leg2.Draw();
+    cm2.Print("mean_" + pip_name + ".pdf");
+
+    delete[] hfit2;  // cleanup
+    delete gr_mean2;  // cleanup
+
+    //------------------H_pim_pele Slice and Fit--------------------------------
+    // Initialize array of 1D histograms for the missing energy slices
+    nSlices = 10;
+    first_slice = 2;
+    last_slice = 9;
+    TH1D *hfit3 = new TH1D[nSlices];
+
+    // Slice the 2D Histogram
+    SliceHisto2D(H_pim_pele, hfit3, nSlices);
+
+    // Instantiate a TGraphErrors for mean values
+    TGraphErrors *gr_mean3 = new TGraphErrors(nSlices);
+
+    // Fit the Histogram Slices and get mean values
+    FitSlices(hfit3, gr_mean3, nSlices, ylow_pim, yup_pim);
+
+    // Remove the mean values of unwanted slices
+    lastPoint = 0;
+    for (int i=last_slice; i<nSlices; i++){
+        lastPoint = gr_mean3->GetN() - 1;
+        gr_mean3->RemovePoint(lastPoint);
+    }
+    for (int i=0; i<first_slice; i++){
+        gr_mean3->RemovePoint(0);
+    }
+
+    // Draw the Fitted Slices
+    TCanvas cf3("cf3", "cf3", 1200, 900);
+    cf3.Divide(3, 3);
+    gStyle->SetOptFit(111);
+    pad = 1;
+    for (int i=first_slice; i<last_slice; i++, pad++){
+        cf3.cd(pad);
+        (hfit3 + i)->Draw();
+    }
+    TString pim_name = H_pim_pele->GetName();
+    cf3.Print("sliceFit_" + pim_name + ".pdf");
+
+    // Draw Mean values
+    TCanvas cm3("cm3", "cm3", 1200, 900);
+    gr_mean3->SetMarkerColor(2);
+    gr_mean3->SetMarkerStyle(21);
+    gr_mean3->SetMarkerSize(1.5);
+    gr_mean3->GetXaxis()->SetTitle("electron momentum [GeV]");
+    gr_mean3->GetYaxis()->SetTitle("missing mass^{2} [GeV]");
+    gr_mean3->SetTitle("Expecting Pim");
+    gr_mean3->Draw("AP");
+    TLegend leg3(0.1, 0.8, 0.3, 0.9);
+    leg3.AddEntry(gr_mean3, "Before Corrections", "p");
+    leg3.Draw();
+    cm3.Print("mean_" + pim_name + ".pdf");
+
+    delete[] hfit3;  // cleanup
+    delete gr_mean3;  // cleanup
+    
+    //------------------H_pro_pele Slice and Fit--------------------------------
+    // Initialize array of 1D histograms for the missing energy slices
+    nSlices = 10;
+    first_slice = 2;
+    last_slice = 9;
+    TH1D *hfit4 = new TH1D[nSlices];
+
+    // Slice the 2D Histogram
+    SliceHisto2D(H_pro_pele, hfit4, nSlices);
+
+    // Instantiate a TGraphErrors for mean values
+    TGraphErrors *gr_mean4 = new TGraphErrors(nSlices);
+
+    // Fit the Histogram Slices and get mean values
+    FitSlices(hfit4, gr_mean4, nSlices, ylow_pim, yup_pim);
+
+    // Remove the mean values of unwanted slices
+    lastPoint = 0;
+    for (int i=last_slice; i<nSlices; i++){
+        lastPoint = gr_mean4->GetN() - 1;
+        gr_mean4->RemovePoint(lastPoint);
+    }
+    for (int i=0; i<first_slice; i++){
+        gr_mean4->RemovePoint(0);
+    }
+
+    // Draw the Fitted Slices
+    TCanvas cf4("cf4", "cf4", 1200, 900);  // draw SliceFit()
+    cf4.Divide(3, 3);
+    gStyle->SetOptFit(111);
+    pad = 1;
+    for (int i=first_slice; i<last_slice; i++, pad++){
+        cf4.cd(pad);
+        (hfit4 + i)->Draw();
+    }
+    TString pro_name = H_pro_pele->GetName();
+    cf4.Print("sliceFit_" + pro_name + ".pdf");
+
+    // Draw Mean values
+    TCanvas cm4("cm4", "cm4", 1200, 900);
+    gr_mean4->SetMarkerColor(2);
+    gr_mean4->SetMarkerStyle(21);
+    gr_mean4->SetMarkerSize(1.5);
+    gr_mean4->GetXaxis()->SetTitle("electron momentum [GeV]");
+    gr_mean4->GetYaxis()->SetTitle("missing mass [GeV]");
+    gr_mean4->SetTitle("Expecting Proton");
+    gr_mean4->Draw("AP");
+    TLegend leg4(0.1, 0.8, 0.3, 0.9);
+    leg4.AddEntry(gr_mean4, "Before Corrections", "p");
+    leg4.Draw();
+    cm4.Print("mean_" + pro_name + ".pdf");
+
+    delete[] hfit4;  // cleanup
+    delete gr_mean4;  // cleanup
+
+    delete H_me_pele;  // cleanup
+    delete H_pip_pele;  // cleanup
+    delete H_pim_pele;  // cleanup
+    delete H_pro_pele;  // cleanup
 
     return 0;
 }
